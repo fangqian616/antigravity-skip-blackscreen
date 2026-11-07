@@ -1,0 +1,11 @@
+{
+  "AppPath": "auto",
+  "ProxyUrl": "auto",
+  "ExtraArgs": [],
+  "CleanStaleProcesses": true,
+  "CheckConnectivity": true,
+  "VerifyUi": "auto",
+  "UiRetries": 1,
+  "UiVerifyTimeoutSec": 40,
+  "KeepWindowOpen": false
+}

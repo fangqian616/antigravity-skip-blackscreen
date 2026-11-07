@@ -1,0 +1,96 @@
+Antigravity 启动器 v3.0  使用说明
+================================================================
+
+【日常使用】
+双击 “Antigravity-Launcher.bat” 即可。
+
+启动器依次会做：
+  1. 自动查找 Antigravity 安装位置
+     （桌面/开始菜单快捷方式 → 常见安装目录 → 注册表卸载项）
+  2. 自动检测可用代理
+     （Windows 系统代理 → 常见本地端口 10808 / 10809 / 7890 / 7897 / 1080 等）
+  3. 检测 Google 登录服务与 Code Assist 服务连通性
+     （失败会自动重试，不会像旧版那样直接退出；仍失败会让你选择重试/继续/退出）
+  4. 处理已在运行的实例；清理上次异常退出留下的“无窗口残留进程”
+  5. 启动客户端并等待窗口出现
+     开启“界面验证”时，会再监听客户端日志约 40 秒，确认没有
+     “Failed to load URL”白屏错误；如发现白屏，会自动结束客户端并重试。
+
+【命令行参数】
+  Antigravity-Launcher.bat -Restart    强制重启（先结束现有进程再启动）
+  Antigravity-Launcher.bat -Diagnose   只诊断，不启动（排查问题用）
+                                       新增「网络稳定性 / 断链检测」：经代理探测 15 次，
+                                       给出失败率与失败样例，可用来对比不同节点
+  Antigravity-Launcher.bat -NoProxy    本次不使用代理
+  Antigravity-Launcher.bat -Help       显示帮助
+
+【config.json 配置项】
+  AppPath              "auto" 或 Antigravity.exe 的完整路径
+  ProxyUrl             "auto" 自动检测 / "off" 不用代理 /
+                       "http://127.0.0.1:10808" 指定代理
+  ExtraArgs            [] 额外启动参数数组
+  CleanStaleProcesses  true  启动前清理没有窗口的残留进程
+  CheckConnectivity    true  检测 Google 连通性
+  VerifyUi             "auto" / true / false
+                       auto = 仅当“上次启动界面加载失败”时才验证（平时启动更快）
+  UiRetries            界面加载失败自动重试次数（默认 1）
+  UiVerifyTimeoutSec   单次界面验证最长等待秒数（默认 40）
+                       注意：客户端大约在启动 30 秒后才写出白屏错误，
+                       若把该值改小（< 35）可能捕捉不到白屏，建议保持默认。
+  KeepWindowOpen       true = 成功后不自动关闭窗口（默认 false）
+
+【代理是怎么生效的】
+  * 系统代理已开启且与检测到的代理一致：
+      不额外传参数，客户端完全使用 Windows 系统代理
+      （因此会保留校园网/内网等系统代理例外白名单）。
+  * 系统代理未开启、或与检测到的代理不一致：
+      启动时注入 --proxy-server / --proxy-bypass-list，
+      白名单会合并系统代理的例外列表，避免破坏校园网直连。
+  * 无论哪种方式，都会给子进程设置
+      HTTP_PROXY / HTTPS_PROXY / NO_PROXY 环境变量（语言服务需要）。
+  * 会主动清除 ELECTRON_RUN_AS_NODE 环境变量，避免客户端被当成 Node 直接退出。
+
+【常见问题】
+Q: 提示“未检测到可用代理”？
+A: 请先启动 v2rayN 等代理软件。常见端口：10808 / 10809 / 7890 / 7897。
+   也可以在 config.json 里直接写死 ProxyUrl。
+
+Q: 能启动但界面白屏（空白窗口）？
+A: 这是客户端自身的问题（窗口加载的是 language_server 提供的本地页面）。
+   启动器开启 VerifyUi 时会自动检测并重试。若反复出现：
+     - 运行 “恢复官方客户端.bat” 撤销汉化补丁（见下）；
+     - 把 Antigravity 安装目录下的 Antigravity.exe 与
+       resources\bin\language_server.exe 加入安全软件（Kaspersky / 360 / 火绒）
+       的受信任程序或排除项，或临时退出安全软件后重试；
+     - 或重启电脑、更新/重装客户端。
+
+Q: 启动后立刻退出？
+A: 多为 ELECTRON_RUN_AS_NODE 环境变量导致，本启动器会自动清除。
+   仍不行请查看客户端日志。
+
+Q: AI 对话偶尔中断、提示网络错误（断链）？
+A: 断链一般来自代理节点/线路，而不是启动器。排查步骤：
+     1) 运行 Antigravity-Launcher.bat -Diagnose，看「网络稳定性 / 断链检测」
+        的失败率；失败率 > 10% 建议直接换节点后重测；
+     2) 换节点后仍断：把 xray.exe / v2rayN.exe / language_server.exe 加入
+        安全软件受信任程序；
+     3) 客户端日志里搜索 EOF / deadline exceeded / connection reset，
+        可定位是哪一分钟断的。
+   注意：客户端对 fetchUserInfo、listExperiments 等后台轮询的失败会自动重试，
+   偶发一两次 EOF 不影响使用。
+
+Q: 双击后窗口一闪而过？
+A: 成功后窗口会自动关闭（属于正常）。想保留窗口请在 config.json 里把
+   KeepWindowOpen 设为 true。出错时窗口会停住等你按任意键。
+
+【日志位置】
+  启动器日志: %LOCALAPPDATA%\AntigravityLauncher\launcher.log
+  客户端日志: %APPDATA%\Antigravity\logs\main.log
+              %APPDATA%\Antigravity\logs\language_server.log
+
+【关于汉化补丁】
+  如果装过汉化补丁，客户端目录里会有官方原版备份：
+      resources\app.asar.bak
+      resources\bin\language_server.exe.agybak
+  出现白屏 / 启动异常时，可运行 “恢复官方客户端.bat” 自动还原，
+  也可以手动把上面两个备份文件改回 app.asar / language_server.exe。
