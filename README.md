@@ -1,0 +1,2 @@
+# antigravity-skip-blackscreen
+帮你跳过antigravity莫名其妙出现的黑屏打不开问题，同时帮你检测并稳定代理问题，减少gemini在antigravity的转圈
